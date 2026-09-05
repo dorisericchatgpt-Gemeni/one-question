@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>有一件事想問你</title>
+<style>
+  :root{
+    --cream:#FFF6EE; --peach:#FFD9C7; --rose:#E8657D; --rose-d:#C7415B;
+    --ink:#3A2E2B; --ink-soft:#7A6862; --card:#FFFFFF; --line:#F0DCD0;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    min-height:100dvh; background:
+      radial-gradient(1000px 500px at 15% -10%, #FFE7D6 0%, transparent 60%),
+      radial-gradient(800px 600px at 110% 110%, #FFDDE6 0%, transparent 55%),
+      var(--cream);
+    color:var(--ink);
+    font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:20px 16px 40px;
+    overflow-x:hidden;
+  }
+  .stage{width:100%; max-width:440px}
+  .screen{display:none; animation:rise .45s cubic-bezier(.2,.8,.3,1)}
+  .screen.on{display:block}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:24px;
+    padding:28px 22px; box-shadow:0 18px 40px -22px rgba(120,60,60,.45);
+  }
+  h1{font-size:25px; line-height:1.45; margin:0 0 12px; letter-spacing:.3px}
+  h2{font-size:20px; line-height:1.5; margin:0 0 10px}
+  p{font-size:15.5px; line-height:1.85; color:var(--ink-soft); margin:0 0 12px}
+  .tiny{font-size:13px; color:#A6928B; line-height:1.7}
+  .btn{
+    display:inline-block; border:0; cursor:pointer; font:inherit; font-weight:700;
+    background:var(--rose); color:#fff; padding:15px 26px; border-radius:999px;
+    box-shadow:0 8px 18px -8px var(--rose-d); transition:transform .15s, background .2s;
+  }
+  .btn:active{transform:scale(.96)}
+  .btn.ghost{background:#fff; color:var(--ink-soft); border:1.5px solid var(--line); box-shadow:none; font-weight:600}
+  .btn.wide{display:block; width:100%; margin-top:10px}
+  .arena{position:relative; min-height:250px; margin-top:18px}
+  #yesBtn{position:absolute; left:50%; top:22px; transform:translateX(-50%); transition:font-size .3s, padding .3s}
+  #noBtn{position:absolute; left:38%; top:110px; transition:left .18s ease, top .18s ease, transform .18s ease}
+  .foods{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px}
+  .food{
+    background:#fff; border:1.5px solid var(--line); border-radius:16px; padding:16px 8px;
+    font-size:15px; font-weight:600; cursor:pointer; transition:transform .12s, border-color .2s;
+    font-family:inherit; color:var(--ink);
+  }
+  .food:active{transform:scale(.95)}
+  .food.dead{opacity:.32; text-decoration:line-through; pointer-events:none}
+  .food.wild{grid-column:1 / -1; border-style:dashed; color:var(--ink-soft)}
+  #rests{grid-template-columns:1fr}
+  #rests .food{padding:13px 14px; text-align:left}
+  .msg{margin-top:14px; font-size:15px; font-weight:600; color:var(--rose-d); min-height:24px; line-height:1.7}
+  #board{
+    position:relative; height:330px; margin-top:14px; border-radius:18px; overflow:hidden;
+    background:linear-gradient(180deg,#FFF1E6 0%, #FFE3EC 100%); border:1.5px solid var(--line);
+    touch-action:none;
+  }
+  .heart{position:absolute; font-size:26px; will-change:transform; user-select:none}
+  #basket{position:absolute; bottom:8px; left:50%; font-size:36px; transform:translateX(-50%); user-select:none}
+  .hud{display:flex; justify-content:space-between; font-size:14px; font-weight:700; margin-top:10px; color:var(--ink-soft)}
+  .modal{
+    position:fixed; inset:0; background:rgba(58,46,43,.45);
+    display:none; align-items:center; justify-content:center; padding:24px; z-index:50;
+  }
+  .modal.on{display:flex}
+  .modal .box{background:#fff; border-radius:22px; padding:26px 22px; max-width:340px; width:100%; text-align:center}
+  .modal .box p{color:var(--ink); font-weight:600; font-size:17px; margin-bottom:18px}
+  .row{display:flex; gap:10px}
+  .row .btn{flex:1; padding:13px 10px; font-size:15px}
+  .ticket{
+    background:linear-gradient(160deg,#fff,#FFF4EC); border:2px dashed var(--peach);
+    border-radius:20px; padding:22px; margin-top:16px; text-align:left;
+  }
+  .ticket .k{font-size:12.5px; color:#B39A92; letter-spacing:1.5px; margin-top:12px}
+  .ticket .v{font-size:19px; font-weight:700; margin-top:2px}
+  .fall{position:fixed; top:-40px; font-size:22px; pointer-events:none; z-index:60}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <section class="screen on" id="s-intro">
+    <div class="card">
+      <h1 id="hi">善柔姑娘 台鑒 ✉️</h1>
+      <p>久聞姑娘美麗、可愛、兼之風趣，<br>三者集於一身，世所罕見。</p>
+      <p>在下今有一事相詢，茲事體大，<br>不敢就這麼隨口問，故備此頁一張，<br>還請姑娘移駕細覽。</p>
+      <button class="btn wide" id="startBtn">准了，往下看 →</button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-ask">
+    <div class="card">
+      <h2 id="askTitle">9/7 是我生日。<br>那天可以陪我吃頓飯嗎？🎂</h2>
+      <p class="tiny" id="askSub">兩個選項，公平公正，隨你選。</p>
+      <div class="arena" id="arena">
+        <button class="btn" id="yesBtn">好啊 🥳</button>
+        <button class="btn ghost" id="noBtn">不要</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-food">
+    <div class="card">
+      <h2>那天要吃什麼？🍽️</h2>
+      <p><b>我請客</b>，你挑。<br>先選個大方向，等等再選店。</p>
+      <div class="foods" id="foods"></div>
+      <div class="msg" id="foodMsg"></div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-rest">
+    <div class="card">
+      <h2 id="restTitle">那要去哪一家？</h2>
+      <p>一樣我請客，隨你選 😌<br>都是有壽星優惠的店，我先查好了。</p>
+      <div class="foods" id="rests"></div>
+      <div class="msg" id="restMsg"></div>
+      <button class="btn ghost wide" id="backFood" style="margin-top:14px">← 換一種吃的</button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-game">
+    <div class="card">
+      <h2>最後一關：接愛心 💗</h2>
+      <p id="gameHint">手指或滑鼠在框裡移動，接到 <b id="need">8</b> 顆就過關。<br>掉了不扣分，慢慢來。</p>
+      <div id="board"><div id="basket">🧺</div></div>
+      <div class="hud"><span>接到 <span id="score">0</span> / <span id="goal">8</span></span><span id="mercy"></span></div>
+      <button class="btn ghost wide" id="skipBtn" style="margin-top:12px">這遊戲我玩不下去</button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-final">
+    <div class="card">
+      <h2>成立 ✅</h2>
+      <p>謝謝你陪我玩完。這是你的票根：</p>
+      <div class="ticket">
+        <div style="font-size:13px;letter-spacing:3px;color:var(--rose)">GENERAL ADMISSION</div>
+        <div class="k">日期</div><div class="v" id="tDate">9/7（日）</div>
+        <div class="k">項目</div><div class="v">陪某人過生日</div>
+        <div class="k">吃</div><div class="v" id="tFood">—</div>
+        <div class="k">地點</div><div class="v" id="tRest">—</div>
+        <div class="k">付錢的人</div><div class="v">我</div>
+        <div class="k">同行者</div><div class="v" id="tWho">善柔 ＋ 我</div>
+      </div>
+      <button class="btn wide" id="copyBtn">複製一句話傳給我 📋</button>
+      <button class="btn ghost wide" id="againBtn">再撒一次花 🎉</button>
+      <p class="tiny" style="margin-top:18px">
+        好啦，說正經的 —— 這整頁是鬧著玩的，你當然可以說不。<br>
+        我只是想跟你講話而已。<br>那天真的有事，跟我說一聲就好，我不會怎樣。
+      </p>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <p id="modalText">你確定嗎？</p>
+    <div class="row">
+      <button class="btn ghost" id="mNo">再想想</button>
+      <button class="btn" id="mYes">確定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   要改的東西全部在這個區塊，改完存檔就好
+   ============================================================ */
+var CONFIG = {
+  her:    "善柔",
+  date:   "9/7（一）",
+  // 每人預期花費（含 10% 服務費）在門檻內我就說好，超過打槍
+  limits: {},     // 想給某類不同門檻就寫這裡，例：{ "吃到飽": 2000 }
+  budget: 1500,   // 沒特別列的類別都用這個
+  goal:   8,
+  // 大方向 → 店家清單。[店名, 預估人均 NT$]
+  places: {
+    "燒肉": [["燒肉Smile 台北信義忠孝店", 830, "LINE會員 送肉品海鮮"], ["肉次方 燒肉放題 台北峨嵋店", 940, "APP 單客 9 折"], ["乾杯燒肉居酒屋 本店", 1320, "當日點數 3 倍送"], ["乾杯燒肉居酒屋 中山店", 1320, "當日點數 3 倍送"], ["老乾杯 台北信義旗艦店", 2420, "當日點數 3 倍送"], ["老乾杯 台北敦南店", 2420, "當日點數 3 倍送"]],
+    "火鍋": [["億品鍋 永和頂溪店", 240, "當月壽星招待招牌肉盤/火鍋雙拼"], ["築間幸福鍋物 台北景美店", 830, "LINE會員 壽星肉品大禮包"], ["湊一鍋 麻辣鴛鴦火鍋 台北旗艦店", 940, "贈送壽星大肉盤"], ["詹記麻辣火鍋 新莊總店", 1320, "招待壽星隱藏版甜點"], ["橘色涮涮屋 一館", 4950, "招待主廚精緻壽星甜點"], ["橘色涮涮屋 新光三越A9館", 4950, "招待壽星手作甜點"]],
+    "吃到飽": [["饗食天堂 台北信義店", 1100, "96折券 + 生日禮 + 點數2倍"], ["饗食天堂 台北永和比漾店", 1100, "iEAT 96折券 + 生日禮 + 點數2倍"], ["饗食天堂 板橋店", 1100, "iEAT 96折券 + 專屬生日禮 + 點數2倍"], ["漢來海港餐廳 台北天母店", 1410, "當日壽星平日 7 折、假日 85 折"], ["果然匯 蔬食宴 台北敦化店", 1980, "96折券 + 蔬食好禮"], ["台北美福大飯店 彩匯自助餐廳 (palette)", 4950, "4 人同行當月壽星免費"]],
+    "居酒屋": [["阿薄郎薄皮餃子台式小酒館 忠孝店", 600, "幾歲送幾顆煎餃"], ["金色三麥 南京店", 830, "當日送 6 吋 BAC 生日蛋糕"], ["ABV 地中海餐酒館 台北創始店", 940, "招待壽星手作甜點"], ["狗一下居酒食堂 西門店", 1320, "滿額贈鮭魚毛毛蟲壽司"], ["艾朋牛排餐酒館 À POINT STEAK & BAR", 2420, "套餐 85 折 + 送生日蛋糕"]],
+    "牛排": [["TGI FRIDAYS 星期五美式餐廳 信義店", 720, "會員滿額送主餐/甜點"], ["西堤牛排 台北重慶南店", 830, "APP 9折 / 招待甜點"], ["西堤牛排 台北南京東店", 830, "APP 9折 / 招待甜點+拍照"], ["西堤牛排 三重重新店", 830, "APP 9折 / 招待甜點+拍照"], ["台北君悅酒店 寶艾西餐廳 (Bel Air)", 1980, "招待專屬主廚生日蛋糕"], ["茹絲葵牛排館 Ruth's Chris Steak House 大直店", 4950, "招待熱熔岩巧克力蛋糕 / 慶生拍立得"]],
+    "壽司生魚片": [["爭鮮迴轉壽司 台北公館店", 330, "爭鮮 APP 壽星滿額抵用券 / 壽司招待"], ["台灣壽司郎 永和中正店", 500, "壽司郎 APP 壽星點數加倍 / 折價券"], ["貓將壽司 台北忠孝店", 720, "96折券 + 壽星握壽司"]],
+    "日式定食": [["鮮五丼 Donmono 台北古亭店", 190, "三商i美食 招牌牛丼「買一送一」"], ["福勝亭日式豬排專賣 台北公館店", 290, "三商i美食 定食「買一送一」/ 折扣券"], ["陶板屋和風創作料理 新店北新店", 830, "APP 88折 / 招待甜點"], ["陶板屋和風創作料理 台北內湖店", 830, "APP 88折 / 招待甜點"]],
+    "韓式料理": [["涓豆腐 台北敦南店", 830, "APP 送韓式炸雞"], ["涓豆腐 台北南京店", 830, "APP 送韓式炸雞"], ["涓豆腐 土城日月光店", 830, "APP 送韓式炸雞"], ["韓姜熙的小廚房 微風台北車站店", 940, "APP 送可樂/炸雞券"]],
+    "泰式料理": [["泰街頭 泰式平價小吃", 290, "當月壽星出示證件招待泰式經典奶茶"], ["饗泰多 泰式風格餐廳 忠孝SOGO店", 830, "96折券 + 壽星料理"], ["饗泰多 泰式風格餐廳 新店裕隆城店", 830, "iEAT 96折券 + 泰式生日禮"], ["泰滾 Rolling Thai 泰式火鍋 天母店", 1320, "當月幾歲送幾隻南美鮮蝦"]],
+    "中式合菜": [["三商巧福 台北公館店", 200, "三商i美食 APP 原汁牛肉麵「買一送一」"], ["1010湘 台北復興北店", 720, "APP 招待精選料理"], ["開飯川食堂 新店裕隆城店", 830, "iEAT 96折券 + 壽星料理"], ["點水樓 南京店", 1320, "預約慶生招待祝壽小籠包/壽桃"], ["阿達師五星麵舖 台北站前店", 1980, "APP 送鴨血辣豆腐"], ["台北六福萬怡酒店 粵亮廣式料理", 2070, "招待手工祝壽壽桃 / 特製甜品"]],
+    "義式": [["拿坡里披薩·炸雞 台北公館店", 330, "三商i美食 重乳酪蛋糕折價 / 炸雞特惠"], ["貳樓餐廳 微風南山店", 600, "APP 送生日蛋糕"], ["薄多義義式手工披薩 台北信義ATT店", 830, "當月幾歲送幾隻炸雞翅"], ["台北遠東香格里拉 馬可波羅餐廳 (Marco Polo)", 1730, "招待高空景觀精緻生日甜點"], ["北投老爺酒店 PURE 歐式法式餐廳", 2070, "當月壽星本人 85 折 / 招待法式小點"]],
+    "美式速食": [["師園鹽酥雞 師大總店", 220, "當月壽星出示證件打卡 免費送炸甜不辣/炸湯圓"], ["發福廚房 Bravo Burger 公館台大店", 420, "當月壽星送香濃炸起司條 / 冰淇淋布朗尼"], ["貳樓餐廳 仁愛店", 600, "APP 送生日蛋糕"], ["樂子 the Diner 瑞安店", 720, "招待美式壽星甜點"]]
+  }
+};
+CONFIG.menu = Object.keys(CONFIG.places).concat(["都可以，你決定"]);
+CONFIG.line = function(food, rest){
+  return "好啦，9/7 陪你過生日，吃" + food + "，去" + rest + "。";
+};
+/* ========================================================== */
+
+function $(s){ return document.querySelector(s); }
+function go(id){
+  var all = document.querySelectorAll(".screen");
+  for (var i = 0; i < all.length; i++) all[i].classList.remove("on");
+  $("#" + id).classList.add("on");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+$("#startBtn").addEventListener("click", function(){ go("s-ask"); });
+
+/* ---------- 1. 不讓她拒絕 ---------- */
+var arena = $("#arena"), yesBtn = $("#yesBtn"), noBtn = $("#noBtn");
+var noLabels = ["不要","不要啦","真的不要","我那天很忙","你很煩耶","別鬧了","......"];
+var dodges = 0, caught = false;
+
+function jump(){
+  var a = arena.getBoundingClientRect(), b = noBtn.getBoundingClientRect();
+  var maxX = Math.max(10, a.width - b.width - 10);
+  var maxY = Math.max(10, a.height - b.height - 10);
+  noBtn.style.left = (Math.random() * maxX) + "px";
+  noBtn.style.top  = (Math.random() * maxY) + "px";
+  noBtn.style.transform = "rotate(" + (Math.random() * 24 - 12) + "deg)";
+  dodges++;
+  noBtn.textContent = noLabels[Math.min(dodges, noLabels.length - 1)];
+  var k = Math.min(dodges, 7);
+  yesBtn.style.fontSize = (16 + k * 2.4) + "px";
+  yesBtn.style.padding  = (15 + k * 2) + "px " + (26 + k * 5) + "px";
+  if (dodges === 3) $("#askSub").textContent = "……你好像按不到欸。";
+  if (dodges === 6) $("#askSub").textContent = "好啦，這次讓你按。";
+  if (dodges >= 7) caught = true;
+}
+
+arena.addEventListener("mousemove", function(e){
+  if (caught) return;
+  var r = noBtn.getBoundingClientRect();
+  var dx = e.clientX - (r.left + r.width / 2);
+  var dy = e.clientY - (r.top + r.height / 2);
+  if (Math.sqrt(dx*dx + dy*dy) < 85) jump();
+});
+noBtn.addEventListener("pointerdown", function(e){
+  if (!caught){ e.preventDefault(); jump(); }
+}, {passive:false});
+
+var confirms = [
+  "你確定要拒絕嗎？",
+  "真的確定？",
+  "最後一次機會喔，確定？",
+  "我再問一次，你確定？",
+  "好，那我換個方式問：你確定嗎？"
+];
+var step = 0;
+noBtn.addEventListener("click", function(){ if (caught) askConfirm(); });
+function askConfirm(){
+  $("#modalText").textContent = confirms[step];
+  $("#modal").classList.add("on");
+}
+$("#mNo").addEventListener("click", function(){
+  $("#modal").classList.remove("on");
+  accept();
+});
+$("#mYes").addEventListener("click", function(){
+  step++;
+  if (step < confirms.length){ askConfirm(); return; }
+  $("#modalText").textContent = "騙你的，不讓你拒絕 😌";
+  $("#mNo").style.display = "none";
+  $("#mYes").textContent = "……好吧";
+  $("#mYes").onclick = function(){
+    $("#modal").classList.remove("on");
+    accept();
+  };
+});
+yesBtn.addEventListener("click", accept);
+
+var accepted = false;
+function accept(){
+  if (accepted) return;
+  accepted = true;
+  rain("💗");
+  buildFoods();
+  setTimeout(function(){ go("s-food"); }, 420);
+}
+
+/* ---------- 2. 吃什麼（選錯就重選） ---------- */
+var overTaunts = [
+  "騙你的，這個不可以 🙂",
+  "這家也不行。我說請客，沒說我很有錢。",
+  "你是不是在試探我的底線。",
+  "再選一次，往上面那幾家看。",
+  "提示：看一下價錢，你就知道我的極限在哪了。"
+];
+var overCount = 0;
+
+function buildFoods(){
+  var box = $("#foods");
+  if (box.children.length) return;
+  CONFIG.menu.forEach(function(name){
+    var b = document.createElement("button");
+    b.className = "food" + (name.indexOf("你決定") >= 0 ? " wild" : "");
+    b.textContent = name;
+    b.addEventListener("click", function(){ pickFood(name); });
+    box.appendChild(b);
+  });
+}
+
+function pickFood(name){
+  var isWild = name.indexOf("你決定") >= 0;
+  var keys = Object.keys(CONFIG.places);
+  var cat = isWild ? keys[Math.floor(Math.random() * keys.length)] : name;
+  $("#tFood").textContent = cat;
+  $("#foodMsg").textContent = isWild ? "那我幫你選了「" + cat + "」。" : "";
+  buildRests(cat);
+  setTimeout(function(){ go("s-rest"); }, isWild ? 700 : 250);
+}
+
+function limitOf(cat){
+  return CONFIG.limits[cat] || CONFIG.budget;
+}
+
+function buildRests(cat){
+  $("#restTitle").textContent = cat + "，那要去哪一家？";
+  var box = $("#rests");
+  box.innerHTML = "";
+  $("#restMsg").textContent = "";
+  var lim = limitOf(cat);
+  CONFIG.places[cat].forEach(function(r){
+    var b = document.createElement("button");
+    b.className = "food";
+    b.innerHTML =
+      '<div style="font-size:14.5px;line-height:1.4">' + r[0] + '</div>' +
+      '<div style="font-weight:400;font-size:12px;color:#A6928B;margin-top:3px">一個人抓 NT$ ' + r[1] + ' 左右（含服務費）</div>' +
+      '<div style="font-weight:600;font-size:12px;color:var(--rose);margin-top:3px">🎂 ' + r[2] + '</div>';
+    b.addEventListener("click", function(){ pickRest(r[0], r[1], lim, b); });
+    box.appendChild(b);
+  });
+}
+
+function pickRest(name, price, lim, el){
+  if (price > lim){
+    el.classList.add("dead");
+    $("#restMsg").textContent = overTaunts[Math.min(overCount, overTaunts.length - 1)];
+    overCount++;
+    return;
+  }
+  $("#tRest").textContent = name;
+  $("#restMsg").textContent = "✅ 成交，就這家。";
+  rain("🍽️");
+  setTimeout(function(){ go("s-game"); startGame(); }, 800);
+}
+
+$("#backFood").addEventListener("click", function(){ go("s-food"); });
+
+/* ---------- 3. 接愛心（只能贏，不會輸） ---------- */
+var board = $("#board"), basket = $("#basket");
+var score = 0, items = [], running = false, t0 = 0, spawnT = 0, bx = 0.5;
+
+function startGame(){
+  if (running) return;
+  running = true; score = 0; items = [];
+  t0 = performance.now(); spawnT = 0;
+  $("#score").textContent = "0";
+  bx = 0.5; basket.style.left = "50%";
+  requestAnimationFrame(loop);
+}
+function movePointer(e){
+  var r = board.getBoundingClientRect();
+  var cx = e.touches ? e.touches[0].clientX : e.clientX;
+  bx = Math.max(0.05, Math.min(0.95, (cx - r.left) / r.width));
+  basket.style.left = (bx * 100) + "%";
+}
+board.addEventListener("pointermove", movePointer);
+board.addEventListener("touchmove", function(e){ e.preventDefault(); movePointer(e); }, {passive:false});
+
+function loop(now){
+  if (!running) return;
+  var r = board.getBoundingClientRect();
+  if (now - spawnT > 620){
+    spawnT = now;
+    var d = document.createElement("div");
+    d.className = "heart";
+    var pool = ["💗","💖","💝","💕"];
+    d.textContent = pool[Math.floor(Math.random() * pool.length)];
+    var x = 0.08 + Math.random() * 0.84;
+    d.style.left = (x * 100) + "%";
+    d.style.top = "-30px";
+    board.appendChild(d);
+    items.push({el:d, x:x, y:-30, v:1.5 + Math.random() * 1.1, got:false, dead:false});
+  }
+  for (var i = 0; i < items.length; i++){
+    var it = items[i];
+    it.y += it.v;
+    it.el.style.top = it.y + "px";
+    var near = Math.abs(it.x - bx) < 0.13;
+    if (!it.got && near && it.y > r.height - 62 && it.y < r.height - 6){
+      it.got = true; it.el.remove(); score++;
+      $("#score").textContent = String(score);
+      if (score >= CONFIG.goal){ win(); return; }
+    }
+    if (it.y > r.height + 40){ it.el.remove(); it.dead = true; }
+  }
+  items = items.filter(function(it){ return !it.got && !it.dead; });
+
+  if (now - t0 > 22000){
+    $("#gameHint").textContent = "算了，看你接得很辛苦，直接讓你過。";
+    win(); return;
+  }
+  requestAnimationFrame(loop);
+}
+
+var skips = 0;
+$("#skipBtn").addEventListener("click", function(){
+  skips++;
+  if (skips < 3){
+    $("#gameHint").textContent = ["不行，玩完。","再按一次試試看。"][skips - 1];
+    return;
+  }
+  $("#gameHint").textContent = "好啦好啦，放你過。";
+  win();
+});
+
+function win(){
+  if (!running) return;
+  running = false;
+  items.forEach(function(it){ it.el.remove(); });
+  items = [];
+  rain("🎉");
+  setTimeout(function(){ go("s-final"); }, 700);
+}
+
+/* ---------- 4. 結尾 ---------- */
+$("#copyBtn").addEventListener("click", function(){
+  var txt = CONFIG.line($("#tFood").textContent, $("#tRest").textContent);
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      $("#copyBtn").textContent = "複製好了 ✅ 去貼給我";
+    }).catch(function(){ $("#copyBtn").textContent = txt; });
+  } else {
+    $("#copyBtn").textContent = txt;
+  }
+});
+$("#againBtn").addEventListener("click", function(){ rain("🎉"); });
+
+/* ---------- 撒花 ---------- */
+function rain(emoji){
+  for (var i = 0; i < 26; i++){
+    var d = document.createElement("div");
+    d.className = "fall";
+    d.textContent = emoji;
+    d.style.left = (Math.random() * 100) + "vw";
+    d.style.fontSize = (16 + Math.random() * 18) + "px";
+    document.body.appendChild(d);
+    var dur = 1600 + Math.random() * 1400;
+    d.animate([
+      {transform:"translateY(0) rotate(0deg)", opacity:1},
+      {transform:"translateY(" + (window.innerHeight + 80) + "px) rotate(" + (Math.random() * 720 - 360) + "deg)", opacity:0.2}
+    ], {duration:dur, easing:"cubic-bezier(.3,.6,.5,1)"});
+    (function(node, ms){ setTimeout(function(){ node.remove(); }, ms); })(d, dur);
+  }
+}
+
+/* ---------- 套用 CONFIG ---------- */
+$("#hi").textContent = CONFIG.her + "姑娘 台鑒 ✉️";
+$("#tDate").textContent = CONFIG.date;
+$("#tWho").textContent  = CONFIG.her + " ＋ 我";
+$("#goal").textContent = String(CONFIG.goal);
+$("#need").textContent = String(CONFIG.goal);
+</script>
+</body>
+</html>

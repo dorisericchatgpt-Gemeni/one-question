@@ -40,6 +40,7 @@
   }
   .btn:active{transform:scale(.96)}
   .btn.ghost{background:#fff; color:var(--ink-soft); border:1.5px solid var(--line); box-shadow:none; font-weight:600}
+  .btn:disabled{opacity:.4; cursor:default}
   .btn.wide{display:block; width:100%; margin-top:10px}
   .arena{position:relative; min-height:210px; margin-top:18px}
   #yesBtn{position:absolute; left:50%; top:22px; transform:translateX(-50%); transition:font-size .3s, padding .3s}
@@ -57,6 +58,9 @@
   #rests{grid-template-columns:1fr}
   #rests .food{padding:13px 14px; text-align:left}
   .msg{margin-top:14px; font-size:15px; font-weight:600; color:var(--rose-d); min-height:24px; line-height:1.7}
+  #gameMsg{margin-top:0; margin-bottom:4px}
+  #gameMsg.show{animation:pop .35s ease}
+  @keyframes pop{from{opacity:0; transform:translateY(-7px)}to{opacity:1; transform:none}}
   #board{
     position:relative; height:330px; margin-top:14px; border-radius:18px; overflow:hidden;
     background:linear-gradient(180deg,#FFF1E6 0%, #FFE3EC 100%); border:1.5px solid var(--line);
@@ -129,6 +133,7 @@
     <div class="card">
       <h2>最後一關：接愛心 💗</h2>
       <p id="gameHint">手指或滑鼠在框裡移動，接到 <b id="need">8</b> 顆就過關。<br>掉了不扣分，慢慢來。</p>
+      <div class="msg" id="gameMsg"></div>
       <div id="board"><div id="basket">🧺</div></div>
       <div class="hud"><span>接到 <span id="score">0</span> / <span id="goal">8</span></span><span id="mercy"></span></div>
       <button class="btn ghost wide" id="skipBtn" style="margin-top:12px">這遊戲我玩不下去</button>
@@ -459,30 +464,40 @@ function loop(now){
   items = items.filter(function(it){ return !it.got && !it.dead; });
 
   if (now - t0 > 22000){
-    $("#gameHint").textContent = "算了，看你接得很辛苦，直接讓你過。";
-    win(); return;
+    sayGame("算了，看你接得很辛苦，直接讓你過。");
+    win(2000); return;
   }
   requestAnimationFrame(loop);
+}
+
+// 在遊戲畫面上方跳一句話出來（重播動畫，所以每次都看得到）
+function sayGame(t){
+  var el = $("#gameMsg");
+  el.textContent = t;
+  el.classList.remove("show");
+  void el.offsetWidth;
+  el.classList.add("show");
 }
 
 var skips = 0;
 $("#skipBtn").addEventListener("click", function(){
   skips++;
   if (skips < 3){
-    $("#gameHint").textContent = ["不行，玩完。","再按一次試試看。"][skips - 1];
+    sayGame(["不行，玩完。", "再按一次試試看。"][skips - 1]);
     return;
   }
-  $("#gameHint").textContent = "好啦好啦，放你過。";
-  win();
+  sayGame("好啦好啦，放你過。這關本來就不是重點。");
+  $("#skipBtn").disabled = true;
+  win(2000);   // 讓她把這句話看完再換頁
 });
 
-function win(){
+function win(delay){
   if (!running) return;
   running = false;
   items.forEach(function(it){ it.el.remove(); });
   items = [];
   rain("🎉");
-  setTimeout(function(){ go("s-final"); }, 700);
+  setTimeout(function(){ go("s-final"); }, delay || 700);
 }
 
 /* ---------- 4. 結尾 ---------- */

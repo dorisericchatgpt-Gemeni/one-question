@@ -486,7 +486,7 @@ $("#skipBtn").addEventListener("click", function(){
     sayGame(["不行，玩完。", "再按一次試試看。"][skips - 1]);
     return;
   }
-  sayGame("好啦好啦，放你過。這關本來就不是重點。");
+  sayGame("好啦好啦，放你過");
   $("#skipBtn").disabled = true;
   win(2000);   // 讓她把這句話看完再換頁
 });

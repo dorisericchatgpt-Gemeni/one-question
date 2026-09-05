@@ -41,9 +41,10 @@
   .btn:active{transform:scale(.96)}
   .btn.ghost{background:#fff; color:var(--ink-soft); border:1.5px solid var(--line); box-shadow:none; font-weight:600}
   .btn.wide{display:block; width:100%; margin-top:10px}
-  .arena{position:relative; min-height:320px; margin-top:18px}
+  .arena{position:relative; min-height:210px; margin-top:18px}
   #yesBtn{position:absolute; left:50%; top:22px; transform:translateX(-50%); transition:font-size .3s, padding .3s}
-  #noBtn{position:absolute; left:38%; top:110px; transition:left .18s ease, top .18s ease, transform .18s ease}
+  /* 不要：整個視窗都能跑，不受卡片邊界限制 */
+  #noBtn{position:fixed; left:0; top:0; z-index:30; transition:left .16s ease, top .16s ease, transform .16s ease}
   .foods{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px}
   .food{
     background:#fff; border:1.5px solid var(--line); border-radius:16px; padding:16px 8px;
@@ -207,46 +208,49 @@ function go(id){
   $("#" + id).classList.add("on");
   window.scrollTo({top:0, behavior:"smooth"});
 }
-$("#startBtn").addEventListener("click", function(){ go("s-ask"); });
+$("#startBtn").addEventListener("click", function(){ go("s-ask"); placeNoInit(); });
 
 /* ---------- 1. 不讓她拒絕 ---------- */
 var arena = $("#arena"), yesBtn = $("#yesBtn"), noBtn = $("#noBtn");
 var noLabels = ["不要","不要啦","真的不要","我那天很忙","你很煩耶","別鬧了","......"];
 var dodges = 0, caught = false;
 
-function jump(){
-  var a = arena.getBoundingClientRect();
+var EDGE = 8;   // 離螢幕邊緣至少留這麼多，才不會被切掉
+var ZONE = 24;  // 「好啊」四周的禁區寬度
+
+// 在整個視窗裡找一個不會壓到「好啊」的落點（座標都是視窗座標）
+function findSpot(){
   var b = noBtn.getBoundingClientRect();
   var y = yesBtn.getBoundingClientRect();
-  var maxX = Math.max(0, a.width - b.width);
-  var maxY = Math.max(0, a.height - b.height);
-
-  // 「好啊」在 arena 內的範圍，四邊各外擴 20px 當禁區
-  var pad = 20;
-  var zl = y.left - a.left - pad, zt = y.top - a.top - pad;
-  var zr = y.right - a.left + pad, zb = y.bottom - a.top + pad;
+  var maxX = Math.max(EDGE, window.innerWidth  - b.width  - EDGE);
+  var maxY = Math.max(EDGE, window.innerHeight - b.height - EDGE);
+  var zl = y.left - ZONE, zt = y.top - ZONE, zr = y.right + ZONE, zb = y.bottom + ZONE;
 
   function clash(x, t){
     return !(x + b.width < zl || x > zr || t + b.height < zt || t > zb);
   }
-
-  var nx = 0, nt = 0, bad = true;
-  for (var i = 0; i < 60 && bad; i++){
-    nx = Math.random() * maxX;
-    nt = Math.random() * maxY;
+  var nx = EDGE, nt = EDGE, bad = true;
+  for (var i = 0; i < 80 && bad; i++){
+    nx = EDGE + Math.random() * (maxX - EDGE);
+    nt = EDGE + Math.random() * (maxY - EDGE);
     bad = clash(nx, nt);
   }
   if (bad){
-    // 隨機抽不到就從「好啊」上方／下方的安全帶挑一條
+    // 視窗太窄時退到「好啊」上方／下方的安全帶
     var bands = [];
-    if (zt - b.height > 0) bands.push([0, zt - b.height]);
-    if (zb < maxY) bands.push([zb, maxY]);
+    if (zt - b.height - EDGE > EDGE) bands.push([EDGE, zt - b.height - EDGE]);
+    if (zb + EDGE < maxY) bands.push([zb + EDGE, maxY]);
     var band = bands.length ? bands[Math.floor(Math.random() * bands.length)] : [maxY, maxY];
-    nx = Math.random() * maxX;
+    nx = EDGE + Math.random() * (maxX - EDGE);
     nt = band[0] + Math.random() * Math.max(0, band[1] - band[0]);
   }
-  noBtn.style.left = nx + "px";
-  noBtn.style.top  = nt + "px";
+  return { x: nx, y: nt };
+}
+
+function jump(){
+  var p = findSpot();
+  noBtn.style.left = p.x + "px";
+  noBtn.style.top  = p.y + "px";
   noBtn.style.transform = "rotate(" + (Math.random() * 24 - 12) + "deg)";
   dodges++;
   noBtn.textContent = noLabels[Math.min(dodges, noLabels.length - 1)];
@@ -258,12 +262,39 @@ function jump(){
   if (dodges >= 7) caught = true;
 }
 
-arena.addEventListener("mousemove", function(e){
-  if (caught) return;
+function onAskScreen(){ return $("#s-ask").classList.contains("on"); }
+
+// 滑鼠靠近就跑（改掛在整份文件上，因為按鈕已經不限在卡片裡）
+document.addEventListener("mousemove", function(e){
+  if (caught || !onAskScreen()) return;
   var r = noBtn.getBoundingClientRect();
   var dx = e.clientX - (r.left + r.width / 2);
   var dy = e.clientY - (r.top + r.height / 2);
-  if (Math.sqrt(dx*dx + dy*dy) < 85) jump();
+  if (Math.sqrt(dx * dx + dy * dy) < 90) jump();
+});
+
+// 進入邀約頁時，先把「不要」擺在「好啊」正下方，看起來像正常的兩顆按鈕
+function placeNoInit(){
+  requestAnimationFrame(function(){
+    var y = yesBtn.getBoundingClientRect();
+    var b = noBtn.getBoundingClientRect();
+    var x = y.left + (y.width - b.width) / 2;
+    x = Math.max(EDGE, Math.min(x, window.innerWidth - b.width - EDGE));
+    noBtn.style.left = x + "px";
+    noBtn.style.top  = Math.min(y.bottom + 26, window.innerHeight - b.height - EDGE) + "px";
+  });
+}
+
+// 轉螢幕或改變視窗大小時，把跑出畫面的按鈕拉回來
+window.addEventListener("resize", function(){
+  if (!onAskScreen()) return;
+  var b = noBtn.getBoundingClientRect();
+  if (b.right > window.innerWidth - EDGE || b.bottom > window.innerHeight - EDGE ||
+      b.left < EDGE || b.top < EDGE){
+    var p = findSpot();
+    noBtn.style.left = p.x + "px";
+    noBtn.style.top  = p.y + "px";
+  }
 });
 noBtn.addEventListener("pointerdown", function(e){
   if (!caught){ e.preventDefault(); jump(); }

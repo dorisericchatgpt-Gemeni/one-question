@@ -147,10 +147,10 @@
       <div class="ticket">
         <div style="font-size:13px;letter-spacing:3px;color:var(--rose)">GENERAL ADMISSION</div>
         <div class="k">日期</div><div class="v" id="tDate">9/7（日）</div>
-        <div class="k">項目</div><div class="v">陪某人過生日</div>
+        <div class="k">項目</div><div class="v">陪榮咪過生日</div>
         <div class="k">吃</div><div class="v" id="tFood">—</div>
         <div class="k">地點</div><div class="v" id="tRest">—</div>
-        <div class="k">付錢的人</div><div class="v">我</div>
+        <div class="k">付錢的人</div><div class="v">榮咪</div>
         <div class="k">同行者</div><div class="v" id="tWho">善柔 ＋ 我</div>
       </div>
       <button class="btn wide" id="copyBtn">複製一句話傳給我 📋</button>
@@ -178,8 +178,10 @@
    要改的東西全部在這個區塊，改完存檔就好
    ============================================================ */
 var CONFIG = {
-  her:    "善柔",
-  date:   "9/7（一）",
+  her:     "善柔",     // 第一頁的稱呼
+  herNick: "柔咪",     // 票根上的暱稱
+  me:      "榮咪",
+  date:    "9/7（一）",
   // 每人預期花費（含 10% 服務費）在門檻內我就說好，超過打槍
   limits: {},     // 想給某類不同門檻就寫這裡，例：{ "吃到飽": 2000 }
   budget: 1500,   // 沒特別列的類別都用這個
@@ -534,7 +536,7 @@ function rain(emoji){
 /* ---------- 套用 CONFIG ---------- */
 $("#hi").textContent = CONFIG.her + "姑娘 台鑒 ✉️";
 $("#tDate").textContent = CONFIG.date;
-$("#tWho").textContent  = CONFIG.her + " ＋ 我";
+$("#tWho").textContent  = CONFIG.herNick + " ＋ " + CONFIG.me;
 $("#goal").textContent = String(CONFIG.goal);
 $("#need").textContent = String(CONFIG.goal);
 </script>

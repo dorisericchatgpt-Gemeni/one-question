@@ -109,7 +109,6 @@
       <p class="tiny" id="askSub">兩個選項，公平公正，隨你選。</p>
       <div class="arena" id="arena">
         <button class="btn" id="yesBtn">好啊 🥳</button>
-        <button class="btn ghost" id="noBtn">不要</button>
       </div>
     </div>
   </section>
@@ -167,6 +166,10 @@
   </section>
 </div>
 
+<!-- 「不要」必須是 body 的直接子元素：放進 .screen 裡的話，卡片進場動畫的
+     transform 會變成它的定位基準，fixed 座標就會被算錯 -->
+<button class="btn ghost" id="noBtn">不要</button>
+
 <div class="modal" id="modal">
   <div class="box">
     <p id="modalText">你確定嗎？</p>
@@ -217,6 +220,8 @@ function go(id){
   var all = document.querySelectorAll(".screen");
   for (var i = 0; i < all.length; i++) all[i].classList.remove("on");
   $("#" + id).classList.add("on");
+  // 「不要」掛在 body 底下，不會跟著 section 一起被藏起來，得手動收
+  if (id !== "s-ask") $("#noBtn").classList.remove("ready");
   window.scrollTo({top:0, behavior:"smooth"});
 }
 $("#startBtn").addEventListener("click", function(){ go("s-ask"); placeNoInit(); });
@@ -293,16 +298,19 @@ function placeNoInit(){
   function put(){
     if (done) return;
     done = true;
-    noBtn.classList.add("snap");        // 這一次移動不要動畫
-    var y = yesBtn.getBoundingClientRect();
-    var b = noBtn.getBoundingClientRect();
-    var x = y.left + (y.width - b.width) / 2;
-    x = Math.max(EDGE, Math.min(x, window.innerWidth - b.width - EDGE));
-    noBtn.style.left = x + "px";
-    noBtn.style.top  = Math.min(y.bottom + 26, window.innerHeight - b.height - EDGE) + "px";
-    void noBtn.offsetWidth;             // 先讓新座標生效，再顯示
-    noBtn.classList.add("ready");
-    requestAnimationFrame(function(){ noBtn.classList.remove("snap"); });
+    // 再等一幀，確保卡片的 transform 已經完全落地才量座標
+    requestAnimationFrame(function(){
+      noBtn.classList.add("snap");      // 這一次移動不要動畫
+      var y = yesBtn.getBoundingClientRect();
+      var b = noBtn.getBoundingClientRect();
+      var x = y.left + (y.width - b.width) / 2;
+      x = Math.max(EDGE, Math.min(x, window.innerWidth - b.width - EDGE));
+      noBtn.style.left = x + "px";
+      noBtn.style.top  = Math.min(y.bottom + 26, window.innerHeight - b.height - EDGE) + "px";
+      void noBtn.offsetWidth;           // 先讓新座標生效，再顯示
+      noBtn.classList.add("ready");
+      requestAnimationFrame(function(){ noBtn.classList.remove("snap"); });
+    });
   }
 
   sec.addEventListener("animationend", put, { once: true });

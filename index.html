@@ -41,7 +41,7 @@
   .btn:active{transform:scale(.96)}
   .btn.ghost{background:#fff; color:var(--ink-soft); border:1.5px solid var(--line); box-shadow:none; font-weight:600}
   .btn.wide{display:block; width:100%; margin-top:10px}
-  .arena{position:relative; min-height:250px; margin-top:18px}
+  .arena{position:relative; min-height:320px; margin-top:18px}
   #yesBtn{position:absolute; left:50%; top:22px; transform:translateX(-50%); transition:font-size .3s, padding .3s}
   #noBtn{position:absolute; left:38%; top:110px; transition:left .18s ease, top .18s ease, transform .18s ease}
   .foods{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px}
@@ -215,11 +215,38 @@ var noLabels = ["不要","不要啦","真的不要","我那天很忙","你很煩
 var dodges = 0, caught = false;
 
 function jump(){
-  var a = arena.getBoundingClientRect(), b = noBtn.getBoundingClientRect();
-  var maxX = Math.max(10, a.width - b.width - 10);
-  var maxY = Math.max(10, a.height - b.height - 10);
-  noBtn.style.left = (Math.random() * maxX) + "px";
-  noBtn.style.top  = (Math.random() * maxY) + "px";
+  var a = arena.getBoundingClientRect();
+  var b = noBtn.getBoundingClientRect();
+  var y = yesBtn.getBoundingClientRect();
+  var maxX = Math.max(0, a.width - b.width);
+  var maxY = Math.max(0, a.height - b.height);
+
+  // 「好啊」在 arena 內的範圍，四邊各外擴 20px 當禁區
+  var pad = 20;
+  var zl = y.left - a.left - pad, zt = y.top - a.top - pad;
+  var zr = y.right - a.left + pad, zb = y.bottom - a.top + pad;
+
+  function clash(x, t){
+    return !(x + b.width < zl || x > zr || t + b.height < zt || t > zb);
+  }
+
+  var nx = 0, nt = 0, bad = true;
+  for (var i = 0; i < 60 && bad; i++){
+    nx = Math.random() * maxX;
+    nt = Math.random() * maxY;
+    bad = clash(nx, nt);
+  }
+  if (bad){
+    // 隨機抽不到就從「好啊」上方／下方的安全帶挑一條
+    var bands = [];
+    if (zt - b.height > 0) bands.push([0, zt - b.height]);
+    if (zb < maxY) bands.push([zb, maxY]);
+    var band = bands.length ? bands[Math.floor(Math.random() * bands.length)] : [maxY, maxY];
+    nx = Math.random() * maxX;
+    nt = band[0] + Math.random() * Math.max(0, band[1] - band[0]);
+  }
+  noBtn.style.left = nx + "px";
+  noBtn.style.top  = nt + "px";
   noBtn.style.transform = "rotate(" + (Math.random() * 24 - 12) + "deg)";
   dodges++;
   noBtn.textContent = noLabels[Math.min(dodges, noLabels.length - 1)];

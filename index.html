@@ -45,7 +45,11 @@
   .arena{position:relative; min-height:210px; margin-top:18px}
   #yesBtn{position:absolute; left:50%; top:22px; transform:translateX(-50%); transition:font-size .3s, padding .3s}
   /* 不要：整個視窗都能跑，不受卡片邊界限制 */
-  #noBtn{position:fixed; left:0; top:0; z-index:30; transition:left .16s ease, top .16s ease, transform .16s ease}
+  #noBtn{position:fixed; left:0; top:0; z-index:30; visibility:hidden;
+         transition:left .16s ease, top .16s ease, transform .16s ease}
+  #noBtn.ready{visibility:visible; animation:fadeIn .28s ease}  /* 定好位才顯示，避免從左上角閃出來 */
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  #noBtn.snap{transition:none}       /* 第一次定位不要有滑行動畫 */
   .foods{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px}
   .food{
     background:#fff; border:1.5px solid var(--line); border-radius:16px; padding:16px 8px;
@@ -280,16 +284,29 @@ document.addEventListener("mousemove", function(e){
   if (Math.sqrt(dx * dx + dy * dy) < 90) jump();
 });
 
-// 進入邀約頁時，先把「不要」擺在「好啊」正下方，看起來像正常的兩顆按鈕
+// 進入邀約頁時，先把「不要」擺在「好啊」正下方，看起來像正常的兩顆按鈕。
+// 卡片有 .45s 的滑入動畫，動畫沒跑完就量座標會偏，所以等動畫結束才定位。
 function placeNoInit(){
-  requestAnimationFrame(function(){
+  var sec = $("#s-ask");
+  var done = false;
+
+  function put(){
+    if (done) return;
+    done = true;
+    noBtn.classList.add("snap");        // 這一次移動不要動畫
     var y = yesBtn.getBoundingClientRect();
     var b = noBtn.getBoundingClientRect();
     var x = y.left + (y.width - b.width) / 2;
     x = Math.max(EDGE, Math.min(x, window.innerWidth - b.width - EDGE));
     noBtn.style.left = x + "px";
     noBtn.style.top  = Math.min(y.bottom + 26, window.innerHeight - b.height - EDGE) + "px";
-  });
+    void noBtn.offsetWidth;             // 先讓新座標生效，再顯示
+    noBtn.classList.add("ready");
+    requestAnimationFrame(function(){ noBtn.classList.remove("snap"); });
+  }
+
+  sec.addEventListener("animationend", put, { once: true });
+  setTimeout(put, 520);                 // 保險：動畫事件沒觸發也要定位
 }
 
 // 轉螢幕或改變視窗大小時，把跑出畫面的按鈕拉回來

@@ -182,8 +182,7 @@
   <div class="box">
     <div style="font-size:46px;line-height:1">🙅</div>
     <p class="big">騙你的，這個不行</p>
-    <p class="sub" id="nopeSub"></p>
-    <button class="btn wide" id="nopeOk" style="margin-top:0">好啦，我再選一次</button>
+    <button class="btn wide" id="nopeOk" style="margin-top:18px">好啦，我再選一次</button>
   </div>
 </div>
 
@@ -389,16 +388,6 @@ function accept(){
 }
 
 /* ---------- 2. 吃什麼（選錯就重選） ---------- */
-// 大字底下那句，每被打槍一次換一句
-var overTaunts = [
-  "我說請客，沒說我很有錢 🙂",
-  "這家也不行。你是不是在試探我的底線。",
-  "往上面看，便宜的都排在前面。",
-  "提示：一個人一千五以內，我眼睛都不眨。",
-  "你已經試第幾次了。"
-];
-var overCount = 0;
-
 function buildFoods(){
   var box = $("#foods");
   if (box.children.length) return;
@@ -463,11 +452,7 @@ function buildRests(cat){
 function pickRest(name, price, lim, el){
   if (price > lim){
     el.classList.add("dead");
-    $("#nopeSub").innerHTML =
-      "<b>" + name + "</b> 一個人要 $" + price + "，<br>我的上限是 $" + lim + "。<br><br>" +
-      overTaunts[Math.min(overCount, overTaunts.length - 1)];
     $("#nope").classList.add("on");
-    overCount++;
     return;
   }
   $("#tRest").textContent = name;

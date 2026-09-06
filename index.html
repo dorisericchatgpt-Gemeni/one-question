@@ -163,7 +163,7 @@
         <div class="k">付錢的人</div><div class="v">榮咪</div>
         <div class="k">同行者</div><div class="v" id="tWho">柔咪 ＋ 榮咪</div>
       </div>
-      <button class="btn wide" id="copyBtn">複製一句話傳給我 📋</button>
+      <button class="btn wide" id="copyBtn">複製一句話傳給榮咪 📋</button>
       <button class="btn ghost wide" id="againBtn">再撒一次花 🎉</button>
       <p class="tiny" style="margin-top:18px">
         好啦，說正經的 —— 這整頁是鬧著玩的，你當然可以說不。<br>
@@ -557,7 +557,7 @@ $("#copyBtn").addEventListener("click", function(){
   var txt = CONFIG.line($("#tFood").textContent, $("#tRest").textContent);
   if (navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){
-      $("#copyBtn").textContent = "複製好了 ✅ 去貼給我";
+      $("#copyBtn").textContent = "複製好了 ✅ 去貼給" + CONFIG.me;
     }).catch(function(){ $("#copyBtn").textContent = txt; });
   } else {
     $("#copyBtn").textContent = txt;
@@ -587,6 +587,7 @@ function rain(emoji){
 $("#hi").textContent = CONFIG.her + "姑娘 台鑒 ✉️";
 $("#tDate").textContent = CONFIG.date;
 $("#tWho").textContent  = CONFIG.herNick + " ＋ " + CONFIG.me;
+$("#copyBtn").textContent = "複製一句話傳給" + CONFIG.me + " 📋";
 $("#goal").textContent = String(CONFIG.goal);
 $("#need").textContent = String(CONFIG.goal);
 </script>

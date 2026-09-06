@@ -80,6 +80,12 @@
   .modal.on{display:flex}
   .modal .box{background:#fff; border-radius:22px; padding:26px 22px; max-width:340px; width:100%; text-align:center}
   .modal .box p{color:var(--ink); font-weight:600; font-size:17px; margin-bottom:18px}
+  .modal .box p.big{font-size:28px; font-weight:800; color:var(--rose-d);
+                    margin:12px 0 8px; line-height:1.35; letter-spacing:.5px}
+  .modal .box p.sub{font-size:14.5px; font-weight:500; color:var(--ink-soft);
+                    margin:0 0 20px; line-height:1.75}
+  .modal.on .box{animation:popIn .32s cubic-bezier(.2,.9,.3,1.25)}
+  @keyframes popIn{from{opacity:0; transform:scale(.84)}to{opacity:1; transform:none}}
   .row{display:flex; gap:10px}
   .row .btn{flex:1; padding:13px 10px; font-size:15px}
   .ticket{
@@ -170,6 +176,16 @@
 <!-- 「不要」必須是 body 的直接子元素：放進 .screen 裡的話，卡片進場動畫的
      transform 會變成它的定位基準，fixed 座標就會被算錯 -->
 <button class="btn ghost" id="noBtn">不要</button>
+
+<!-- 選到超過預算的店：整個畫面跳出來 -->
+<div class="modal" id="nope">
+  <div class="box">
+    <div style="font-size:46px;line-height:1">🙅</div>
+    <p class="big">騙你的，這個不行</p>
+    <p class="sub" id="nopeSub"></p>
+    <button class="btn wide" id="nopeOk" style="margin-top:0">好啦，我再選一次</button>
+  </div>
+</div>
 
 <div class="modal" id="modal">
   <div class="box">
@@ -373,12 +389,13 @@ function accept(){
 }
 
 /* ---------- 2. 吃什麼（選錯就重選） ---------- */
+// 大字底下那句，每被打槍一次換一句
 var overTaunts = [
-  "騙你的，這個不可以 🙂",
-  "這家也不行。我說請客，沒說我很有錢。",
-  "你是不是在試探我的底線。",
-  "再選一次，往上面那幾家看。",
-  "提示：看一下價錢，你就知道我的極限在哪了。"
+  "我說請客，沒說我很有錢 🙂",
+  "這家也不行。你是不是在試探我的底線。",
+  "往上面看，便宜的都排在前面。",
+  "提示：一個人一千五以內，我眼睛都不眨。",
+  "你已經試第幾次了。"
 ];
 var overCount = 0;
 
@@ -446,7 +463,10 @@ function buildRests(cat){
 function pickRest(name, price, lim, el){
   if (price > lim){
     el.classList.add("dead");
-    $("#restMsg").textContent = overTaunts[Math.min(overCount, overTaunts.length - 1)];
+    $("#nopeSub").innerHTML =
+      "<b>" + name + "</b> 一個人要 $" + price + "，<br>我的上限是 $" + lim + "。<br><br>" +
+      overTaunts[Math.min(overCount, overTaunts.length - 1)];
+    $("#nope").classList.add("on");
     overCount++;
     return;
   }
@@ -458,6 +478,7 @@ function pickRest(name, price, lim, el){
 
 $("#backFood").addEventListener("click", function(){ go("s-food"); });
 $("#backFoodTop").addEventListener("click", function(){ go("s-food"); });
+$("#nopeOk").addEventListener("click", function(){ $("#nope").classList.remove("on"); });
 
 /* ---------- 3. 接愛心（只能贏，不會輸） ---------- */
 var board = $("#board"), basket = $("#basket");
